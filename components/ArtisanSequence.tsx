@@ -27,7 +27,7 @@ export default function ArtisanSequence() {
     // Lazy load images - preload first batch, then load rest progressively
     useEffect(() => {
         const loadedImages: HTMLImageElement[] = [];
-        const PRELOAD_BATCH = 10; // Only preload first 10 frames
+        const PRELOAD_BATCH = 60; // Preload first 60 frames for smooth initial scroll
         let preloadedCount = 0;
         let totalLoadedCount = 0;
 
@@ -39,7 +39,7 @@ export default function ArtisanSequence() {
 
         setImages(loadedImages);
 
-        // Preload first batch for immediate display
+        // Preload first batch for immediate display and smooth scrolling
         for (let i = 1; i <= Math.min(PRELOAD_BATCH, TOTAL_FRAMES); i++) {
             const img = loadedImages[i - 1];
             const frameNumber = String(i).padStart(3, '0');
@@ -60,7 +60,7 @@ export default function ArtisanSequence() {
 
         // Load remaining frames progressively in background
         function loadRemainingFrames() {
-            const BATCH_SIZE = 20; // Load 20 frames at a time
+            const BATCH_SIZE = 30; // Load 30 frames at a time (increased from 20)
             let currentBatch = PRELOAD_BATCH + 1;
 
             function loadNextBatch() {
@@ -79,9 +79,9 @@ export default function ArtisanSequence() {
 
                 currentBatch = batchEnd + 1;
 
-                // Continue loading next batch after a delay
+                // Continue loading next batch after a shorter delay
                 if (currentBatch <= TOTAL_FRAMES) {
-                    setTimeout(loadNextBatch, 500);
+                    setTimeout(loadNextBatch, 300); // Reduced from 500ms to 300ms
                 }
             }
 
