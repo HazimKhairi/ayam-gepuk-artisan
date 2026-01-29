@@ -11,6 +11,7 @@ export default function ArtisanSequence() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [images, setImages] = useState<HTMLImageElement[]>([]);
     const [imagesLoaded, setImagesLoaded] = useState(false);
+    const [loadingProgress, setLoadingProgress] = useState(0);
 
     const { scrollYProgress } = useScroll({
         target: containerRef,
@@ -23,27 +24,69 @@ export default function ArtisanSequence() {
     const text3Opacity = useTransform(scrollYProgress, [0.55, 0.65, 0.75], [0, 1, 0]);
     const text4Opacity = useTransform(scrollYProgress, [0.85, 0.92, 1], [0, 1, 1]);
 
-    // Preload all images
+    // Lazy load images - preload first batch, then load rest progressively
     useEffect(() => {
         const loadedImages: HTMLImageElement[] = [];
-        let loadedCount = 0;
+        const PRELOAD_BATCH = 10; // Only preload first 10 frames
+        let preloadedCount = 0;
+        let totalLoadedCount = 0;
 
+        // Initialize all image objects
         for (let i = 1; i <= TOTAL_FRAMES; i++) {
             const img = new Image();
-            const frameNumber = String(i).padStart(3, '0');
-            img.src = `/sequence/ezgif-frame-${frameNumber}.png`;
-
-            img.onload = () => {
-                loadedCount++;
-                if (loadedCount === TOTAL_FRAMES) {
-                    setImagesLoaded(true);
-                }
-            };
-
             loadedImages.push(img);
         }
 
         setImages(loadedImages);
+
+        // Preload first batch for immediate display
+        for (let i = 1; i <= Math.min(PRELOAD_BATCH, TOTAL_FRAMES); i++) {
+            const img = loadedImages[i - 1];
+            const frameNumber = String(i).padStart(3, '0');
+            img.src = `/sequence/ezgif-frame-${frameNumber}.png`;
+
+            img.onload = () => {
+                preloadedCount++;
+                totalLoadedCount++;
+                setLoadingProgress(Math.round((totalLoadedCount / TOTAL_FRAMES) * 100));
+
+                if (preloadedCount === PRELOAD_BATCH) {
+                    setImagesLoaded(true);
+                    // Start loading remaining frames in background
+                    loadRemainingFrames();
+                }
+            };
+        }
+
+        // Load remaining frames progressively in background
+        function loadRemainingFrames() {
+            const BATCH_SIZE = 20; // Load 20 frames at a time
+            let currentBatch = PRELOAD_BATCH + 1;
+
+            function loadNextBatch() {
+                const batchEnd = Math.min(currentBatch + BATCH_SIZE, TOTAL_FRAMES);
+
+                for (let i = currentBatch; i <= batchEnd; i++) {
+                    const img = loadedImages[i - 1];
+                    const frameNumber = String(i).padStart(3, '0');
+                    img.src = `/sequence/ezgif-frame-${frameNumber}.png`;
+
+                    img.onload = () => {
+                        totalLoadedCount++;
+                        setLoadingProgress(Math.round((totalLoadedCount / TOTAL_FRAMES) * 100));
+                    };
+                }
+
+                currentBatch = batchEnd + 1;
+
+                // Continue loading next batch after a delay
+                if (currentBatch <= TOTAL_FRAMES) {
+                    setTimeout(loadNextBatch, 500);
+                }
+            }
+
+            loadNextBatch();
+        }
     }, []);
 
     // Render canvas based on scroll
@@ -107,7 +150,8 @@ export default function ArtisanSequence() {
                     <div className="absolute inset-0 flex items-center justify-center bg-charcoal">
                         <div className="text-center">
                             <div className="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                            <p className="text-cream font-serif text-xl">Loading Artisan Experience...</p>
+                            <p className="text-cream font-serif text-xl mb-2">Loading Artisan Experience...</p>
+                            <p className="text-cream/60 font-sans text-sm">{loadingProgress}%</p>
                         </div>
                     </div>
                 )}
