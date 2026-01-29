@@ -24,69 +24,31 @@ export default function ArtisanSequence() {
     const text3Opacity = useTransform(scrollYProgress, [0.55, 0.65, 0.75], [0, 1, 0]);
     const text4Opacity = useTransform(scrollYProgress, [0.85, 0.92, 1], [0, 1, 1]);
 
-    // Lazy load images - preload first batch, then load rest progressively
+    // Preload all images before showing content
     useEffect(() => {
         const loadedImages: HTMLImageElement[] = [];
-        const PRELOAD_BATCH = 60; // Preload first 60 frames for smooth initial scroll
-        let preloadedCount = 0;
-        let totalLoadedCount = 0;
+        let loadedCount = 0;
 
-        // Initialize all image objects
         for (let i = 1; i <= TOTAL_FRAMES; i++) {
             const img = new Image();
-            loadedImages.push(img);
-        }
-
-        setImages(loadedImages);
-
-        // Preload first batch for immediate display and smooth scrolling
-        for (let i = 1; i <= Math.min(PRELOAD_BATCH, TOTAL_FRAMES); i++) {
-            const img = loadedImages[i - 1];
             const frameNumber = String(i).padStart(3, '0');
             img.src = `/sequence/ezgif-frame-${frameNumber}.png`;
 
             img.onload = () => {
-                preloadedCount++;
-                totalLoadedCount++;
-                setLoadingProgress(Math.round((totalLoadedCount / TOTAL_FRAMES) * 100));
+                loadedCount++;
+                // Update progress
+                setLoadingProgress(Math.round((loadedCount / TOTAL_FRAMES) * 100));
 
-                if (preloadedCount === PRELOAD_BATCH) {
+                // All images loaded
+                if (loadedCount === TOTAL_FRAMES) {
                     setImagesLoaded(true);
-                    // Start loading remaining frames in background
-                    loadRemainingFrames();
                 }
             };
+
+            loadedImages.push(img);
         }
 
-        // Load remaining frames progressively in background
-        function loadRemainingFrames() {
-            const BATCH_SIZE = 30; // Load 30 frames at a time (increased from 20)
-            let currentBatch = PRELOAD_BATCH + 1;
-
-            function loadNextBatch() {
-                const batchEnd = Math.min(currentBatch + BATCH_SIZE, TOTAL_FRAMES);
-
-                for (let i = currentBatch; i <= batchEnd; i++) {
-                    const img = loadedImages[i - 1];
-                    const frameNumber = String(i).padStart(3, '0');
-                    img.src = `/sequence/ezgif-frame-${frameNumber}.png`;
-
-                    img.onload = () => {
-                        totalLoadedCount++;
-                        setLoadingProgress(Math.round((totalLoadedCount / TOTAL_FRAMES) * 100));
-                    };
-                }
-
-                currentBatch = batchEnd + 1;
-
-                // Continue loading next batch after a shorter delay
-                if (currentBatch <= TOTAL_FRAMES) {
-                    setTimeout(loadNextBatch, 300); // Reduced from 500ms to 300ms
-                }
-            }
-
-            loadNextBatch();
-        }
+        setImages(loadedImages);
     }, []);
 
     // Render canvas based on scroll
