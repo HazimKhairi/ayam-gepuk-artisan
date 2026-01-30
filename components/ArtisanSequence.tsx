@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { getFrameIndex } from '@/lib/utils';
 
-const TOTAL_FRAMES = 240;
+const TOTAL_FRAMES = 80;
 
 export default function ArtisanSequence() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -26,13 +26,16 @@ export default function ArtisanSequence() {
 
     // Preload all images before showing content
     useEffect(() => {
+        // @ts-ignore
+        window.loadingStartTime = performance.now();
+        console.log('Starting image load...');
         const loadedImages: HTMLImageElement[] = [];
         let loadedCount = 0;
 
         for (let i = 1; i <= TOTAL_FRAMES; i++) {
             const img = new Image();
             const frameNumber = String(i).padStart(3, '0');
-            img.src = `/sequence/ezgif-frame-${frameNumber}.webp`;
+            img.src = `/sequence_optimized/ezgif-frame-${frameNumber}.webp`;
 
             img.onload = () => {
                 loadedCount++;
@@ -41,6 +44,10 @@ export default function ArtisanSequence() {
 
                 // All images loaded
                 if (loadedCount === TOTAL_FRAMES) {
+                    const endTime = performance.now();
+                    // @ts-ignore
+                    const duration = (endTime - window.loadingStartTime) / 1000;
+                    console.log(`✅ All ${TOTAL_FRAMES} images loaded in ${duration.toFixed(2)} seconds`);
                     setImagesLoaded(true);
                 }
             };
