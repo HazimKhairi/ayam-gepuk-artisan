@@ -32,7 +32,7 @@ export default function ArtisanSequence() {
         for (let i = 1; i <= TOTAL_FRAMES; i++) {
             const img = new Image();
             const frameNumber = String(i).padStart(3, '0');
-            img.src = `/sequence/ezgif-frame-${frameNumber}.png`;
+            img.src = `/sequence/ezgif-frame-${frameNumber}.webp`;
 
             img.onload = () => {
                 loadedCount++;
